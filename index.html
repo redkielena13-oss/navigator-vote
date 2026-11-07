@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Навигатор Инноватора — Система оценки демо-дня</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts Inter & Montserrat -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fdf2f6',
+              100: '#fce7f0',
+              200: '#f9cfe1',
+              500: '#e11d6e',
+              600: '#c2185b',
+              700: '#a3114b',
+              800: '#9d0a44',
+              900: '#6f052e',
+            },
+            dark: '#1e2124'
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            heading: ['Montserrat', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Плавные анимации и кастомный скролл */
+    body {
+      font-family: 'Inter', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .font-heading {
+      font-family: 'Montserrat', sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-brand-100 selection:text-brand-800">
+
+  <!-- ВЕРХНЯЯ ШАПКА / НАВИГАЦИЯ -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16 sm:h-20">
+        <!-- Логотип и проект -->
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-brand-800 to-brand-600 flex items-center justify-center text-white shadow-md shadow-brand-800/20">
+            <i data-lucide="award" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <div class="text-xs font-semibold uppercase tracking-wider text-brand-800 font-heading">Демо-день</div>
+            <div class="text-base sm:text-lg font-bold text-slate-900 tracking-tight font-heading leading-tight">Навигатор инноватора</div>
+          </div>
+        </div>
+
+        <!-- Офлайн статус индикатор -->
+        <div class="flex items-center space-x-2">
+          <div id="netStatusBadge" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Автономный режим активен</span>
+          </div>
+
+          <!-- Меню переключения вкладок -->
+          <nav class="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <button onclick="switchTab('expert')" id="tabBtn-expert" class="flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg transition-all text-white bg-brand-800 shadow-sm">
+              <i data-lucide="edit-3" class="w-4 h-4"></i>
+              <span class="hidden sm:inline">Оценка</span>
+            </button>
+            <button onclick="switchTab('dashboard')" id="tabBtn-dashboard" class="flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900 transition-all">
+              <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+              <span>Дашборд</span>
+            </button>
+            <button onclick="switchTab('settings')" id="tabBtn-settings" class="flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900 transition-all">
+              <i data-lucide="settings" class="w-4 h-4"></i>
+              <span class="hidden md:inline">Списки</span>
+            </button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- УВЕДОМЛЕНИЯ / TOASTS -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full px-4 pointer-events-none"></div>
+
+  <!-- ОСНОВНОЙ КОНТЕНТ -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+    <!-- ========================================== -->
+    <!-- 1. ВКЛАДКА ЭКСПЕРТА (ФОРМА ГОЛОСОВАНИЯ)   -->
+    <!-- ========================================== -->
+    <div id="view-expert" class="space-y-6">
+      <!-- Блок информации о текущем эксперте и потоке -->
+      <div class="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-sm transition">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <!-- Шаг 1: Поток -->
+          <div class="flex-1">
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">1. Выберите поток</label>
+            <div class="grid grid-cols-3 gap-2" id="expertStreamSelector">
+              <!-- Генерируется динамически -->
+            </div>
+          </div>
+
+          <!-- Шаг 2: Эксперт -->
+          <div class="flex-1">
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-xs font-bold uppercase tracking-wider text-slate-500">2. Фамилия эксперта</label>
+              <button id="btnResetExpert" onclick="resetStoredExpert()" class="hidden text-xs text-brand-800 font-semibold hover:underline">
+                Сменить
+              </button>
+            </div>
+            <div id="expertPickerWrapper">
+              <select id="expertSelect" onchange="onExpertSelected(this.value)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-800 focus:border-brand-800 transition">
+                <option value="">-- Выберите ваше ФИО --</option>
+              </select>
+            </div>
+            <div id="expertLockedCard" class="hidden flex items-center justify-between bg-brand-50 border border-brand-200 rounded-xl px-4 py-2.5">
+              <div class="flex items-center gap-2">
+                <i data-lucide="check-circle-2" class="w-4 h-4 text-brand-800"></i>
+                <span id="lockedExpertName" class="text-sm font-bold text-brand-900 font-heading"></span>
+              </div>
+              <span class="text-xs bg-brand-800 text-white px-2 py-0.5 rounded-md font-semibold">Эксперт зафиксирован</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Выбор проекта для оценки -->
+      <div class="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">3. Выберите выступающий проект</label>
+            <p class="text-xs text-slate-500">Зеленая метка — проект уже оценен вами</p>
+          </div>
+          <span id="evaluatedProjectsCount" class="text-xs font-bold text-slate-700 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+            Оценено: 0 / 0
+          </span>
+        </div>
+
+        <div id="projectChipsList" class="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+          <!-- Чипы команд потока рендерятся тут -->
+        </div>
+
+        <!-- Выбранный проект баннер -->
+        <div id="currentProjectBanner" class="mt-4 p-4 rounded-xl bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-brand-800 flex items-center justify-center font-bold text-lg font-heading text-white">
+              #<span id="bannerProjectNum">1</span>
+            </div>
+            <div>
+              <div class="text-xs uppercase text-slate-400 font-bold tracking-wider">Выступает команда:</div>
+              <h2 id="bannerProjectName" class="text-base sm:text-lg font-bold font-heading text-white tracking-tight">Выберите команду из списка</h2>
+            </div>
+          </div>
+          <div id="bannerProjectStatusBadge" class="self-start sm:self-auto px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            Ожидает вашей оценки
+          </div>
+        </div>
+      </div>
+
+      <!-- ФОРМА ОЦЕНИВАНИЯ ПО ПАМЯТКЕ ЭКСПЕРТА -->
+      <form id="evaluationForm" onsubmit="handleEvaluationSubmit(event)" class="bg-white rounded-2xl p-4 sm:p-8 border border-slate-200 shadow-sm space-y-8">
+        
+        <div class="border-b border-slate-200 pb-4 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-8 bg-brand-800 rounded-full"></div>
+            <h3 class="text-lg sm:text-xl font-bold font-heading text-slate-900">Бланк экспертной оценки</h3>
+          </div>
+          <span class="text-xs font-bold text-brand-800 uppercase tracking-wider bg-brand-50 border border-brand-200 px-3 py-1 rounded-lg">
+            Макс. 33 балла
+          </span>
+        </div>
+
+        <!-- КРИТЕРИЙ 1 -->
+        <div class="criterion-card space-y-3 p-4 sm:p-5 rounded-xl bg-slate-50/70 border border-slate-200/80">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full bg-slate-800 text-white text-xs font-bold flex items-center justify-center">1</span>
+                <h4 class="text-base font-bold text-slate-900 font-heading">Технологичность проекта</h4>
+              </div>
+              <p class="text-xs text-slate-600 mt-1 pl-8">Наличие, уровень развития, эффективность технологии. Интеллектуальная собственность. Научно-технический задел.</p>
+            </div>
+            <div class="text-right shrink-0">
+              <span class="text-xs font-semibold text-slate-400 block">Шкала</span>
+              <span class="text-sm font-bold text-brand-800">макс. 10</span>
+            </div>
+          </div>
+          <div class="pt-2 pl-0 sm:pl-8">
+            <div class="grid grid-cols-5 sm:grid-cols-10 gap-1.5 sm:gap-2" id="scoreButtons-c1">
+              <!-- Кнопки 1..10 -->
+            </div>
+          </div>
+        </div>
+
+        <!-- КРИТЕРИЙ 2 -->
+        <div class="criterion-card space-y-3 p-4 sm:p-5 rounded-xl bg-slate-50/70 border border-slate-200/80">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full bg-slate-800 text-white text-xs font-bold flex items-center justify-center">2</span>
+                <h4 class="text-base font-bold text-slate-900 font-heading">Перспективы коммерциализации</h4>
+              </div>
+              <p class="text-xs text-slate-600 mt-1 pl-8">Конкурентные преимущества, анализ рынка, целевые сегменты, востребованность продукта.</p>
+            </div>
+            <div class="text-right shrink-0">
+              <span class="text-xs font-semibold text-slate-400 block">Шкала</span>
+              <span class="text-sm font-bold text-brand-800">макс. 10</span>
+            </div>
+          </div>
+          <div class="pt-2 pl-0 sm:pl-8">
+            <div class="grid grid-cols-5 sm:grid-cols-10 gap-1.5 sm:gap-2" id="scoreButtons-c2">
+              <!-- Кнопки 1..10 -->
+            </div>
+          </div>
+        </div>
+
+        <!-- КРИТЕРИЙ 3 -->
+        <div class="criterion-card space-y-3 p-4 sm:p-5 rounded-xl bg-slate-50/70 border border-slate-200/80">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full bg-slate-800 text-white text-xs font-bold flex items-center justify-center">3</span>
+                <h4 class="text-base font-bold text-slate-900 font-heading">Квалификация заявителя (команда)</h4>
+              </div>
+              <p class="text-xs text-slate-600 mt-1 pl-8">Опыт команды, участие в образовательных программах, укомплектованность команды.</p>
+            </div>
+            <div class="text-right shrink-0">
+              <span class="text-xs font-semibold text-slate-400 block">Шкала</span>
+              <span class="text-sm font-bold text-brand-800">макс. 10</span>
+            </div>
+          </div>
+          <div class="pt-2 pl-0 sm:pl-8">
+            <div class="grid grid-cols-5 sm:grid-cols-10 gap-1.5 sm:gap-2" id="scoreButtons-c3">
+              <!-- Кнопки 1..10 -->
+            </div>
+          </div>
+        </div>
+
+        <!-- БЛОК ДОПОЛНИТЕЛЬНЫХ БАЛЛОВ (+1) -->
+        <div class="p-4 sm:p-5 rounded-xl bg-brand-50/50 border border-brand-200/60 space-y-4">
+          <div class="flex items-center gap-2 pb-2 border-b border-brand-200/50">
+            <i data-lucide="plus-circle" class="w-5 h-5 text-brand-800"></i>
+            <h4 class="text-sm font-bold uppercase tracking-wider text-brand-900 font-heading">Дополнительные баллы (по +1 баллу)</h4>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <!-- Бонус 1 -->
+            <label class="relative flex flex-col justify-between p-3.5 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-brand-500 transition shadow-xs select-none">
+              <div class="flex items-start justify-between mb-2">
+                <span class="text-sm font-bold text-slate-900 font-heading">Доп. балл за НПТЛ</span>
+                <span class="text-xs font-extrabold bg-brand-100 text-brand-800 px-2 py-0.5 rounded">+1</span>
+              </div>
+              <p class="text-xs text-slate-500 mb-3">Соответствие направлениям нацпроектов тех. лидерства</p>
+              <div class="flex items-center gap-2 mt-auto">
+                <input type="checkbox" id="bonus_nptl" onchange="calculateFormTotal()" class="w-5 h-5 text-brand-800 rounded border-slate-300 focus:ring-brand-800 cursor-pointer">
+                <span class="text-xs font-medium text-slate-700">Начислить +1 балл</span>
+              </div>
+            </label>
+
+            <!-- Бонус 2 -->
+            <label class="relative flex flex-col justify-between p-3.5 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-brand-500 transition shadow-xs select-none">
+              <div class="flex items-start justify-between mb-2">
+                <span class="text-sm font-bold text-slate-900 font-heading">Прохождение акселератора</span>
+                <span class="text-xs font-extrabold bg-brand-100 text-brand-800 px-2 py-0.5 rounded">+1</span>
+              </div>
+              <p class="text-xs text-slate-500 mb-3">Подтвержденное прохождение подходящего акселератора с проектом</p>
+              <div class="flex items-center gap-2 mt-auto">
+                <input type="checkbox" id="bonus_accel" onchange="calculateFormTotal()" class="w-5 h-5 text-brand-800 rounded border-slate-300 focus:ring-brand-800 cursor-pointer">
+                <span class="text-xs font-medium text-slate-700">Начислить +1 балл</span>
+              </div>
+            </label>
+
+            <!-- Бонус 3 -->
+            <label class="relative flex flex-col justify-between p-3.5 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-brand-500 transition shadow-xs select-none">
+              <div class="flex items-start justify-between mb-2">
+                <span class="text-sm font-bold text-slate-900 font-heading">Молодой ученый / инженер</span>
+                <span class="text-xs font-extrabold bg-brand-100 text-brand-800 px-2 py-0.5 rounded">+1</span>
+              </div>
+              <p class="text-xs text-slate-500 mb-3">Участие в ПИШ, молодежной лаборатории, СКБ или ВОИР</p>
+              <div class="flex items-center gap-2 mt-auto">
+                <input type="checkbox" id="bonus_scientist" onchange="calculateFormTotal()" class="w-5 h-5 text-brand-800 rounded border-slate-300 focus:ring-brand-800 cursor-pointer">
+                <span class="text-xs font-medium text-slate-700">Начислить +1 балл</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- КОММЕНТАРИЙ -->
+        <div class="space-y-1.5">
+          <label for="evalComment" class="block text-xs font-bold uppercase tracking-wider text-slate-600">
+            Рекомендации и комментарий команде (необязательно)
+          </label>
+          <textarea id="evalComment" rows="2" placeholder="Сильные стороны проекта, риски, контакты партнеров или советы..." class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-800 focus:bg-white transition"></textarea>
+        </div>
+
+        <!-- ИТОГОВЫЙ БЛОК И КНОПКА ОТПРАВКИ -->
+        <div class="p-5 rounded-2xl bg-slate-900 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+          <div class="text-center sm:text-left">
+            <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold block">Итоговый балл за проект</span>
+            <div class="flex items-baseline gap-1 justify-center sm:justify-start">
+              <span id="formTotalDisplay" class="text-3xl sm:text-4xl font-extrabold font-heading text-white">0</span>
+              <span class="text-sm font-bold text-slate-400">/ 33 баллов</span>
+            </div>
+          </div>
+
+          <div class="w-full sm:w-auto flex flex-col sm:flex-row items-center gap-3">
+            <span id="saveStatusInfo" class="text-xs text-slate-400 flex items-center gap-1.5">
+              <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+              Сохранение 100% офлайн
+            </span>
+            <button type="submit" id="submitBtn" class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-brand-800 to-brand-600 hover:from-brand-700 hover:to-brand-500 text-white font-bold text-sm tracking-wide shadow-lg shadow-brand-900/40 active:scale-[0.98] transition flex items-center justify-center gap-2">
+              <i data-lucide="send" class="w-4 h-4"></i>
+              <span>Зафиксировать оценку</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 2. ВКЛАДКА ДАШБОРДА ОРГАНИЗАТОРА           -->
+    <!-- ========================================== -->
+    <div id="view-dashboard" class="hidden space-y-6">
+      
+      <!-- Панель управления фильтрами и экспорт -->
+      <div class="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-xl font-bold font-heading text-slate-900">Сводный дашборд демо-дня</h2>
+          <p class="text-xs text-slate-500">Оперативный мониторинг голосования экспертов и расчет рейтингов в режиме реального времени</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2.5">
+          <!-- Фильтр потока -->
+          <div class="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200" id="dashStreamFilter">
+            <button onclick="setDashboardStream('all')" class="dash-filter-btn px-3 py-1.5 text-xs font-bold rounded-lg bg-white text-slate-900 shadow-xs" data-stream="all">Все потоки</button>
+            <button onclick="setDashboardStream(1)" class="dash-filter-btn px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900" data-stream="1">Поток 1</button>
+            <button onclick="setDashboardStream(2)" class="dash-filter-btn px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900" data-stream="2">Поток 2</button>
+            <button onclick="setDashboardStream(3)" class="dash-filter-btn px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900" data-stream="3">Поток 3</button>
+          </div>
+
+          <!-- Кнопка экспорта в Excel/CSV -->
+          <button onclick="exportScoresToCSV()" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-400"></i>
+            <span>Экспорт в Excel / CSV</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Ключевые метрики -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs">
+          <div class="flex items-center justify-between text-slate-400 mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Всего оценок</span>
+            <i data-lucide="check-check" class="w-5 h-5 text-brand-800"></i>
+          </div>
+          <div id="statTotalEvals" class="text-2xl sm:text-3xl font-extrabold font-heading text-slate-900">0</div>
+          <div class="text-xs text-slate-500 mt-1">зафиксировано в системе</div>
+        </div>
+
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs">
+          <div class="flex items-center justify-between text-slate-400 mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Проектов оценено</span>
+            <i data-lucide="layers" class="w-5 h-5 text-indigo-600"></i>
+          </div>
+          <div id="statProjectsDone" class="text-2xl sm:text-3xl font-extrabold font-heading text-slate-900">0 / 0</div>
+          <div class="text-xs text-slate-500 mt-1">имеют хотя бы 1 голос</div>
+        </div>
+
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs">
+          <div class="flex items-center justify-between text-slate-400 mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Активных экспертов</span>
+            <i data-lucide="users" class="w-5 h-5 text-emerald-600"></i>
+          </div>
+          <div id="statActiveExperts" class="text-2xl sm:text-3xl font-extrabold font-heading text-slate-900">0 / 0</div>
+          <div class="text-xs text-slate-500 mt-1">уже проголосовали</div>
+        </div>
+
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs">
+          <div class="flex items-center justify-between text-slate-400 mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Средний балл</span>
+            <i data-lucide="trending-up" class="w-5 h-5 text-amber-500"></i>
+          </div>
+          <div id="statAvgScore" class="text-2xl sm:text-3xl font-extrabold font-heading text-slate-900">0.0</div>
+          <div class="text-xs text-slate-500 mt-1">по всем проектам</div>
+        </div>
+      </div>
+
+      <!-- МАТРИЦА КОНТРОЛЯ: КТО ЗА КОГО ПРОГОЛОСОВАЛ -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-4 sm:p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 class="text-base font-bold font-heading text-slate-900 flex items-center gap-2">
+              <i data-lucide="grid" class="w-4 h-4 text-brand-800"></i>
+              Матрица явок (контроль голосования экспертов)
+            </h3>
+            <p class="text-xs text-slate-500">Зеленый бейдж — оценка выставлена, серый прочерк — эксперт еще не проголосовал за команду</p>
+          </div>
+          <span class="text-xs text-slate-500 italic">Скроллится по горизонтали</span>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar p-2">
+          <table class="w-full text-left text-xs border-collapse" id="matrixTable">
+            <!-- Динамическая сборка матрицы -->
+          </table>
+        </div>
+      </div>
+
+      <!-- ИТОГОВАЯ ТАБЛИЦА РЕЙТИНГА ПРОЕКТОВ -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="text-base font-bold font-heading text-slate-900 flex items-center gap-2">
+            <i data-lucide="trophy" class="w-4 h-4 text-amber-500"></i>
+            Рейтинговая таблица проектов
+          </h3>
+          <span id="rankingCounter" class="text-xs font-semibold text-slate-500">35 проектов</span>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left text-xs sm:text-sm">
+            <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
+              <tr>
+                <th class="py-3.5 px-4 text-center w-12">Место</th>
+                <th class="py-3.5 px-4">Команда / Проект</th>
+                <th class="py-3.5 px-3 text-center">Поток</th>
+                <th class="py-3.5 px-3 text-center">Голосов</th>
+                <th class="py-3.5 px-3 text-right">Технологии (макс 10)</th>
+                <th class="py-3.5 px-3 text-right">Рынок (макс 10)</th>
+                <th class="py-3.5 px-3 text-right">Команда (макс 10)</th>
+                <th class="py-3.5 px-3 text-right">Бонусы</th>
+                <th class="py-3.5 px-4 text-right font-bold text-slate-900 bg-slate-100/70">Итоговый ср. балл</th>
+              </tr>
+            </thead>
+            <tbody id="rankingTableBody" class="divide-y divide-slate-200">
+              <!-- Заполняется динамически -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 3. ВКЛАДКА НАСТРОЕК И СПИСКОВ              -->
+    <!-- ========================================== -->
+    <div id="view-settings" class="hidden space-y-6">
+      <div class="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-sm">
+        <div class="flex items-center gap-2 mb-2">
+          <i data-lucide="sliders" class="w-5 h-5 text-brand-800"></i>
+          <h2 class="text-xl font-bold font-heading text-slate-900">Управление списками день в день</h2>
+        </div>
+        <p class="text-xs sm:text-sm text-slate-500">
+          Вы можете быстро скорректировать списки экспертов и команд утром перед финалом без программирования. Вставьте построчно имена или восстановите демо-шаблон.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Редактор экспертов -->
+        <div class="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-900 font-heading">Эксперты по потокам (30 чел)</h3>
+            <span class="text-xs text-slate-400">Формат: Поток | ФИО</span>
+          </div>
+          <p class="text-xs text-slate-500">
+            Укажите номер потока и ФИО через вертикальную черту <code class="bg-slate-100 px-1 py-0.5 rounded text-brand-800 font-bold">1 | Иванов Иван</code>
+          </p>
+          <textarea id="rawExpertsInput" rows="12" class="w-full font-mono text-xs p-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-800 focus:outline-none custom-scrollbar"></textarea>
+          <button onclick="saveExpertsConfig()" class="w-full py-2.5 rounded-xl bg-brand-800 hover:bg-brand-700 text-white text-xs font-bold shadow-sm transition">
+            Сохранить список экспертов
+          </button>
+        </div>
+
+        <!-- Редактор команд -->
+        <div class="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-900 font-heading">Команды по потокам (35 проектов)</h3>
+            <span class="text-xs text-slate-400">Формат: Поток | Название</span>
+          </div>
+          <p class="text-xs text-slate-500">
+            Укажите номер потока и проект через черту <code class="bg-slate-100 px-1 py-0.5 rounded text-brand-800 font-bold">1 | НейроСкан</code>
+          </p>
+          <textarea id="rawProjectsInput" rows="12" class="w-full font-mono text-xs p-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-800 focus:outline-none custom-scrollbar"></textarea>
+          <button onclick="saveProjectsConfig()" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-sm transition">
+            Сохранить список команд
+          </button>
+        </div>
+      </div>
+
+      <!-- Зона сброса и бэкапа -->
+      <div class="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+          <h4 class="text-sm font-bold text-slate-900 font-heading">Резервное копирование и сброс</h4>
+          <p class="text-xs text-slate-500">Вы можете скачать резервную копию оценок в формате JSON или сбросить демо-оценки перед реальным стартом.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="exportJSONBackup()" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition">
+            Скачать JSON бэкап
+          </button>
+          <button onclick="clearAllEvaluations()" class="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition">
+            Очистить все оценки
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ЛОГИКА ПРИЛОЖЕНИЯ -->
+  <script>
+    // ==========================================
+    // НАЧАЛЬНЫЕ ДЕМО-ДАННЫЕ (35 команд, 30 экспертов)
+    // ==========================================
+    const DEFAULT_EXPERTS = [
+      // Поток 1
+      { id: "e1", stream: 1, name: "Алексеев Андрей (ВШЭ / Трекер)" },
+      { id: "e2", stream: 1, name: "Борисова Елена (Инвест-фонд Восход)" },
+      { id: "e3", stream: 1, name: "Васильев Сергей (Сколково)" },
+      { id: "e4", stream: 1, name: "Григорьев Дмитрий (ПАО Сбербанк)" },
+      { id: "e5", stream: 1, name: "Дмитриева Анна (ФРИИ)" },
+      { id: "e6", stream: 1, name: "Егоров Михаил (ПИШ ИТМО)" },
+      { id: "e7", stream: 1, name: "Жукова Ольга (Бизнес-ангел)" },
+      { id: "e8", stream: 1, name: "Зайцев Павел (Яндекс)" },
+      { id: "e9", stream: 1, name: "Иванова Ксения (ВОИР Эксперт)" },
+      { id: "e10", stream: 1, name: "Ковалев Артем (Технопарк)" },
+
+      // Поток 2
+      { id: "e11", stream: 2, name: "Лебедев Максим (РВК)" },
+      { id: "e12", stream: 2, name: "Морозова Дарья (ВЭБ Инновации)" },
+      { id: "e13", stream: 2, name: "Николаев Роман (Ростелеком)" },
+      { id: "e14", stream: 2, name: "Орлова Мария (МФТИ Венчур)" },
+      { id: "e15", stream: 2, name: "Петров Денис (Северсталь Инно)" },
+      { id: "e16", stream: 2, name: "Романова Ирина (Skoltech)" },
+      { id: "e17", stream: 2, name: "Смирнов Виктор (Газпромнефть НТЦ)" },
+      { id: "e18", stream: 2, name: "Тарасов Илья (Клуб Ангелов)" },
+      { id: "e19", stream: 2, name: "Ульянова Светлана (МТС Стартап Хаб)" },
+      { id: "e20", stream: 2, name: "Федоров Кирилл (ПИШ Бауманка)" },
+
+      // Поток 3
+      { id: "e21", stream: 3, name: "Харитонов Игорь (Росатом Венчурс)" },
+      { id: "e22", stream: 3, name: "Цветкова Полина (Альфа Инновации)" },
+      { id: "e23", stream: 3, name: "Чернышев Олег (Сибур Диджитал)" },
+      { id: "e24", stream: 3, name: "Шестаков Арсений (ХайВей Венчур)" },
+      { id: "e25", stream: 3, name: "Щербакова Юлия (Фонд Содействия Инновациям)" },
+      { id: "e26", stream: 3, name: "Юдин Владислав (Иннополис)" },
+      { id: "e27", stream: 3, name: "Яковлева Вероника (ПАО Полюс)" },
+      { id: "e28", stream: 3, name: "Белов Константин (ВК Технологии)" },
+      { id: "e29", stream: 3, name: "Гусева Наталья (Стартап Академия)" },
+      { id: "e30", stream: 3, name: "Мельников Артур (ПИШ СПбПУ)" }
+    ];
+
+    const DEFAULT_PROJECTS = [
+      // Поток 1 (12 команд)
+      { id: "p1", stream: 1, name: "БиоСкан Сенсор (Ранняя диагностика патологий)" },
+      { id: "p2", stream: 1, name: "RoboWeld (Автономный лазерный робот-сварщик)" },
+      { id: "p3", stream: 1, name: "АгроДрон AI (Мониторинг сорняков и болезней культур)" },
+      { id: "p4", stream: 1, name: "NeuroProsthesis (Бионический протез кисти)" },
+      { id: "p5", stream: 1, name: "SmartAlloy (Высокопрочные композитные сплавы)" },
+      { id: "p6", stream: 1, name: "CleanWater Nanofilter (Графеновая очистка вод)" },
+      { id: "p7", stream: 1, name: "EcoPolymer (Биоразлагаемая упаковка из отходов)" },
+      { id: "p8", stream: 1, name: "OptiDrive (Контроллер тяговых электродвигателей)" },
+      { id: "p9", stream: 1, name: "CyberAudit (Анализ уязвимостей АСУ ТП)" },
+      { id: "p10", stream: 1, name: "GreenPower (Микрогенераторы кинетической энергии)" },
+      { id: "p11", stream: 1, name: "VR-Rehab (Тренажер нейрореабилитации)" },
+      { id: "p12", stream: 1, name: "LaserPrint 3D (Печать жаропрочными порошками)" },
+
+      // Поток 2 (11 команд)
+      { id: "p13", stream: 2, name: "ГеоТрек (Сверхточная подземная навигация без GPS)" },
+      { id: "p14", stream: 2, name: "КвантСпектр (Портативный рамановский спектрометр)" },
+      { id: "p15", stream: 2, name: "ФармСинтез (Ускоренный скрининг молекул лекарств)" },
+      { id: "p16", stream: 2, name: "TermoShield (Аэрогелевая сверхлегкая теплоизоляция)" },
+      { id: "p17", stream: 2, name: "СмартГрид AI (Оптимизация нагрузок подстанций)" },
+      { id: "p18", stream: 2, name: "АнтиКорр Нано (Антикоррозийное покрытие трубопроводов)" },
+      { id: "p19", stream: 2, name: "СенсорГаз (Оптический детектор утечек метана)" },
+      { id: "p20", stream: 2, name: "БиоКожа (Матрица для регенерации ожоговых ран)" },
+      { id: "p21", stream: 2, name: "ПромЗрение (Нейросетевой контроль качества на конвейере)" },
+      { id: "p22", stream: 2, name: "АэроВетро (Малошумный вертикальный ветрогенератор)" },
+      { id: "p23", stream: 2, name: "КриоФриз (Портативный криогенный охладитель)" },
+
+      // Поток 3 (12 команд)
+      { id: "p24", stream: 3, name: "Интеллект-Шахта (Беспилотная погрузка руды)" },
+      { id: "p25", stream: 3, name: "НейроЧип (Аналоговый процессор для edge-вычислений)" },
+      { id: "p26", stream: 3, name: "СоларЭффект (Перовскитные гибкие солнечные элементы)" },
+      { id: "p27", stream: 3, name: "Батарея-Графен (Быстрозаряжаемый суперконденсатор)" },
+      { id: "p28", stream: 3, name: "ДронСпасатель (Поисковый комплекс с тепловизором)" },
+      { id: "p29", stream: 3, name: "МедГолос (Скрининг болезни Паркинсона по голосу)" },
+      { id: "p30", stream: 3, name: "СинтезДНК (Компактный настольный олигонуклеотидный синтезатор)" },
+      { id: "p31", stream: 3, name: "ЭкоБетон (Углерод-отрицательный строительный блок)" },
+      { id: "p32", stream: 3, name: "АкваФерма IoT (Замкнутая экосистема выращивания рыбы)" },
+      { id: "p33", stream: 3, name: "ОптоВолокно Детект (Мониторинг деформаций мостов)" },
+      { id: "p34", stream: 3, name: "ПлазмаКлин (Стерилизация медицинского инструмента)" },
+      { id: "p35", stream: 3, name: "Аватар-Ассист (Голографический интерфейс инженера)" }
+    ];
+
+    // ==========================================
+    // СОСТОЯНИЕ И ХРАНИЛИЩЕ (LOCALSTORAGE)
+    // ==========================================
+    const STORAGE_KEY_EXPERTS = 'ni_demo_experts_v1';
+    const STORAGE_KEY_PROJECTS = 'ni_demo_projects_v1';
+    const STORAGE_KEY_EVALS = 'ni_demo_evaluations_v1';
+    const STORAGE_KEY_ACTIVE_EXPERT = 'ni_demo_active_expert_id';
+    const STORAGE_KEY_ACTIVE_STREAM = 'ni_demo_active_stream';
+
+    let expertsList = [];
+    let projectsList = [];
+    let evaluations = []; // { id, projectId, expertId, stream, c1, c2, c3, b1, b2, b3, total, comment, timestamp }
+
+    let currentStream = 1;
+    let currentExpertId = null;
+    let currentProjectId = null;
+    let dashFilterStream = 'all';
+
+    // Временное состояние формы
+    let formScore = {
+      c1: null,
+      c2: null,
+      c3: null,
+      b1: 0,
+      b2: 0,
+      b3: 0
+    };
+
+    // ==========================================
+    // ИНИЦИАЛИЗАЦИЯ ПРИ ЗАПУСКЕ
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', () => {
+      loadStorageData();
+      renderStreamSelectors();
+      initScoreButtons();
+      restoreSavedExpert();
+      renderProjectsChips();
+      populateSettingsTextareas();
+      updateDashboard();
+      lucide.createIcons();
+
+      // Слушатель синхронизации между вкладками браузера (если организатор и эксперты открывают на одном ноутбуке или тестятся вкладки)
+      window.addEventListener('storage', (e) => {
+        if (e.key === STORAGE_KEY_EVALS) {
+          evaluations = JSON.parse(e.newValue || '[]');
+          renderProjectsChips();
+          updateDashboard();
+        }
+      });
+    });
+
+    function loadStorageData() {
+      // Загрузка экспертов
+      const savedExp = localStorage.getItem(STORAGE_KEY_EXPERTS);
+      expertsList = savedExp ? JSON.parse(savedExp) : DEFAULT_EXPERTS;
+
+      // Загрузка команд
+      const savedProj = localStorage.getItem(STORAGE_KEY_PROJECTS);
+      projectsList = savedProj ? JSON.parse(savedProj) : DEFAULT_PROJECTS;
+
+      // Загрузка оценок
+      const savedEvals = localStorage.getItem(STORAGE_KEY_EVALS);
+      evaluations = savedEvals ? JSON.parse(savedEvals) : [];
+
+      // Восстановление потока
+      const savedStream = localStorage.getItem(STORAGE_KEY_ACTIVE_STREAM);
+      if (savedStream) currentStream = parseInt(savedStream, 10);
+    }
+
+    // Сохранение оценок
+    function persistEvaluations() {
+      localStorage.setItem(STORAGE_KEY_EVALS, JSON.stringify(evaluations));
+    }
+
+    // ==========================================
+    // НАВИГАЦИЯ МЕЖДУ ВКЛАДКАМИ
+    // ==========================================
+    function switchTab(tabId) {
+      const views = ['expert', 'dashboard', 'settings'];
+      views.forEach(v => {
+        const viewEl = document.getElementById(`view-${v}`);
+        const btnEl = document.getElementById(`tabBtn-${v}`);
+        if (v === tabId) {
+          viewEl.classList.remove('hidden');
+          btnEl.className = "flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg transition-all text-white bg-brand-800 shadow-sm";
+        } else {
+          viewEl.classList.add('hidden');
+          btnEl.className = "flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900 transition-all";
+        }
+      });
+
+      if (tabId === 'dashboard') {
+        updateDashboard();
+      }
+      lucide.createIcons();
+    }
+
+    // ==========================================
+    // ЛОГИКА ЭКСПЕРТА: ПОТОКИ И ФИО
+    // ==========================================
+    function renderStreamSelectors() {
+      const container = document.getElementById('expertStreamSelector');
+      container.innerHTML = '';
+      [1, 2, 3].forEach(streamNum => {
+        const isActive = currentStream === streamNum;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.onclick = () => selectStream(streamNum);
+        btn.className = `py-2 px-3 text-xs font-bold rounded-xl border transition flex items-center justify-center gap-1.5 ${
+          isActive 
+            ? 'bg-brand-800 text-white border-brand-800 shadow-xs ring-2 ring-brand-800/20' 
+            : 'bg-white text-slate-700 border-slate-300 hover:border-brand-500'
+        }`;
+        btn.innerHTML = `<span class="w-2 h-2 rounded-full ${isActive ? 'bg-white' : 'bg-brand-600'}"></span> Поток ${streamNum}`;
+        container.appendChild(btn);
+      });
+      populateExpertSelect();
+    }
+
+    function selectStream(streamNum) {
+      currentStream = streamNum;
+      localStorage.setItem(STORAGE_KEY_ACTIVE_STREAM, streamNum);
+      renderStreamSelectors();
+      populateExpertSelect();
+      renderProjectsChips();
+      
+      // Автовыбор первой команды потока
+      const streamProjects = projectsList.filter(p => p.stream === currentStream);
+      if (streamProjects.length > 0) {
+        selectProject(streamProjects[0].id);
+      }
+    }
+
+    function populateExpertSelect() {
+      const select = document.getElementById('expertSelect');
+      const filteredExperts = expertsList.filter(e => e.stream === currentStream);
+      
+      select.innerHTML = `<option value="">-- Выберите ваше ФИО (${filteredExperts.length} экспертов в Потоке ${currentStream}) --</option>`;
+      filteredExperts.forEach(exp => {
+        const opt = document.createElement('option');
+        opt.value = exp.id;
+        opt.textContent = exp.name;
+        select.appendChild(opt);
+      });
+
+      if (currentExpertId) {
+        const existsInStream = filteredExperts.some(e => e.id === currentExpertId);
+        if (existsInStream) {
+          select.value = currentExpertId;
+        }
+      }
+    }
+
+    function onExpertSelected(expertId) {
+      if (!expertId) return;
+      currentExpertId = expertId;
+      localStorage.setItem(STORAGE_KEY_ACTIVE_EXPERT, expertId);
+      lockExpertUI();
+      renderProjectsChips();
+      loadExistingEvaluationForCurrent();
+    }
+
+    function restoreSavedExpert() {
+      const savedId = localStorage.getItem(STORAGE_KEY_ACTIVE_EXPERT);
+      if (savedId) {
+        const expert = expertsList.find(e => e.id === savedId);
+        if (expert) {
+          currentExpertId = savedId;
+          currentStream = expert.stream;
+          localStorage.setItem(STORAGE_KEY_ACTIVE_STREAM, currentStream);
+          renderStreamSelectors();
+          lockExpertUI();
+          return;
+        }
+      }
+      unlockExpertUI();
+    }
+
+    function lockExpertUI() {
+      const expert = expertsList.find(e => e.id === currentExpertId);
+      if (!expert) return;
+
+      document.getElementById('expertPickerWrapper').classList.add('hidden');
+      document.getElementById('expertLockedCard').classList.remove('hidden');
+      document.getElementById('lockedExpertName').textContent = expert.name;
+      document.getElementById('btnResetExpert').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function unlockExpertUI() {
+      document.getElementById('expertPickerWrapper').classList.remove('hidden');
+      document.getElementById('expertLockedCard').classList.add('hidden');
+      document.getElementById('btnResetExpert').classList.add('hidden');
+      const select = document.getElementById('expertSelect');
+      select.value = "";
+    }
+
+    function resetStoredExpert() {
+      currentExpertId = null;
+      localStorage.removeItem(STORAGE_KEY_ACTIVE_EXPERT);
+      unlockExpertUI();
+      renderProjectsChips();
+      showToast('Эксперт сброшен. Выберите новое ФИО.', 'info');
+    }
+
+    // ==========================================
+    // ВЫБОР ПРОЕКТОВ (КАРТОЧКИ / ЧИПЫ)
+    // ==========================================
+    function renderProjectsChips() {
+      const streamProjects = projectsList.filter(p => p.stream === currentStream);
+      const container = document.getElementById('projectChipsList');
+      container.innerHTML = '';
+
+      let evaluatedCount = 0;
+
+      streamProjects.forEach((proj, idx) => {
+        // Проверяем, оценил ли текущий эксперт данный проект
+        const isEvaluated = currentExpertId && evaluations.some(ev => ev.projectId === proj.id && ev.expertId === currentExpertId);
+        if (isEvaluated) evaluatedCount++;
+
+        const isSelected = proj.id === currentProjectId;
+
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.onclick = () => selectProject(proj.id);
+        chip.className = `shrink-0 px-3.5 py-2.5 rounded-xl border text-left transition flex items-center gap-2 text-xs font-semibold ${
+          isSelected 
+            ? 'bg-slate-900 text-white border-slate-900 shadow-sm ring-2 ring-slate-900/20' 
+            : isEvaluated
+              ? 'bg-emerald-50 text-emerald-900 border-emerald-300 hover:border-emerald-400'
+              : 'bg-white text-slate-700 border-slate-200 hover:border-slate-400'
+        }`;
+
+        chip.innerHTML = `
+          <span class="w-5 h-5 rounded-md flex items-center justify-center font-bold text-[10px] ${
+            isSelected ? 'bg-brand-800 text-white' : isEvaluated ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'
+          }">
+            ${idx + 1}
+          </span>
+          <span class="truncate max-w-[150px] sm:max-w-[200px]">${proj.name}</span>
+          ${isEvaluated ? '<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600 ml-1"></i>' : ''}
+        `;
+        container.appendChild(chip);
+      });
+
+      document.getElementById('evaluatedProjectsCount').textContent = `Оценено вами: ${evaluatedCount} / ${streamProjects.length}`;
+
+      // Если проект не выбран, выбираем первый
+      if (!currentProjectId && streamProjects.length > 0) {
+        selectProject(streamProjects[0].id);
+      } else {
+        updateProjectBanner();
+      }
+      lucide.createIcons();
+    }
+
+    function selectProject(projId) {
+      currentProjectId = projId;
+      renderProjectsChips();
+      updateProjectBanner();
+      loadExistingEvaluationForCurrent();
+    }
+
+    function updateProjectBanner() {
+      const proj = projectsList.find(p => p.id === currentProjectId);
+      if (!proj) return;
+
+      const streamProjects = projectsList.filter(p => p.stream === currentStream);
+      const index = streamProjects.findIndex(p => p.id === proj.id) + 1;
+
+      document.getElementById('bannerProjectNum').textContent = index > 0 ? index : '—';
+      document.getElementById('bannerProjectName').textContent = proj.name;
+
+      const isEvaluated = currentExpertId && evaluations.some(ev => ev.projectId === proj.id && ev.expertId === currentExpertId);
+      const badge = document.getElementById('bannerProjectStatusBadge');
+      if (isEvaluated) {
+        badge.className = "self-start sm:self-auto px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1";
+        badge.innerHTML = `<i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Оценка зафиксирована (можно обновить)`;
+      } else {
+        badge.className = "self-start sm:self-auto px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30";
+        badge.innerHTML = `Ожидает вашей оценки`;
+      }
+      lucide.createIcons();
+    }
+
+    // ==========================================
+    // ИНИЦИАЛИЗАЦИЯ И РАБОТА С КНОПКАМИ БАЛЛОВ (1..10)
+    // ==========================================
+    function initScoreButtons() {
+      ['c1', 'c2', 'c3'].forEach(crit => {
+        const container = document.getElementById(`scoreButtons-${crit}`);
+        container.innerHTML = '';
+        for (let score = 1; score <= 10; score++) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.dataset.crit = crit;
+          btn.dataset.val = score;
+          btn.onclick = () => setCriterionScore(crit, score);
+          btn.className = `score-btn-${crit} py-2.5 rounded-xl border text-xs sm:text-sm font-extrabold transition flex items-center justify-center bg-white text-slate-700 border-slate-300 hover:border-brand-500`;
+          btn.textContent = score;
+          container.appendChild(btn);
+        }
+      });
+    }
+
+    function setCriterionScore(crit, value) {
+      formScore[crit] = value;
+      const buttons = document.querySelectorAll(`.score-btn-${crit}`);
+      buttons.forEach(btn => {
+        const val = parseInt(btn.dataset.val, 10);
+        if (val === value) {
+          btn.className = `score-btn-${crit} py-2.5 rounded-xl border text-xs sm:text-sm font-extrabold transition flex items-center justify-center bg-brand-800 text-white border-brand-800 shadow-md scale-105`;
+        } else {
+          btn.className = `score-btn-${crit} py-2.5 rounded-xl border text-xs sm:text-sm font-extrabold transition flex items-center justify-center bg-white text-slate-700 border-slate-300 hover:border-brand-500`;
+        }
+      });
+      calculateFormTotal();
+    }
+
+    function calculateFormTotal() {
+      const b1 = document.getElementById('bonus_nptl').checked ? 1 : 0;
+      const b2 = document.getElementById('bonus_accel').checked ? 1 : 0;
+      const b3 = document.getElementById('bonus_scientist').checked ? 1 : 0;
+
+      formScore.b1 = b1;
+      formScore.b2 = b2;
+      formScore.b3 = b3;
+
+      const sum = (formScore.c1 || 0) + (formScore.c2 || 0) + (formScore.c3 || 0) + b1 + b2 + b3;
+      document.getElementById('formTotalDisplay').textContent = sum;
+      return sum;
+    }
+
+    function loadExistingEvaluationForCurrent() {
+      // Сброс формы
+      formScore = { c1: null, c2: null, c3: null, b1: 0, b2: 0, b3: 0 };
+      document.getElementById('bonus_nptl').checked = false;
+      document.getElementById('bonus_accel').checked = false;
+      document.getElementById('bonus_scientist').checked = false;
+      document.getElementById('evalComment').value = '';
+
+      ['c1', 'c2', 'c3'].forEach(crit => {
+        document.querySelectorAll(`.score-btn-${crit}`).forEach(btn => {
+          btn.className = `score-btn-${crit} py-2.5 rounded-xl border text-xs sm:text-sm font-extrabold transition flex items-center justify-center bg-white text-slate-700 border-slate-300 hover:border-brand-500`;
+        });
+      });
+
+      if (!currentExpertId || !currentProjectId) {
+        calculateFormTotal();
+        return;
+      }
+
+      // Поиск имеющейся оценки
+      const existing = evaluations.find(ev => ev.projectId === currentProjectId && ev.expertId === currentExpertId);
+      if (existing) {
+        if (existing.c1) setCriterionScore('c1', existing.c1);
+        if (existing.c2) setCriterionScore('c2', existing.c2);
+        if (existing.c3) setCriterionScore('c3', existing.c3);
+        document.getElementById('bonus_nptl').checked = !!existing.b1;
+        document.getElementById('bonus_accel').checked = !!existing.b2;
+        document.getElementById('bonus_scientist').checked = !!existing.b3;
+        document.getElementById('evalComment').value = existing.comment || '';
+        document.getElementById('submitBtn').innerHTML = `<i data-lucide="refresh-cw" class="w-4 h-4"></i> <span>Обновить оценку</span>`;
+      } else {
+        document.getElementById('submitBtn').innerHTML = `<i data-lucide="send" class="w-4 h-4"></i> <span>Зафиксировать оценку</span>`;
+      }
+
+      calculateFormTotal();
+      lucide.createIcons();
+    }
+
+    // ==========================================
+    // ОТПРАВКА ОЦЕНКИ В ХРАНИЛИЩЕ
+    // ==========================================
+    function handleEvaluationSubmit(e) {
+      e.preventDefault();
+
+      if (!currentExpertId) {
+        showToast('Пожалуйста, выберите фамилию эксперта вверху!', 'error');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+
+      if (!currentProjectId) {
+        showToast('Пожалуйста, выберите проект для оценки!', 'error');
+        return;
+      }
+
+      if (!formScore.c1 || !formScore.c2 || !formScore.c3) {
+        showToast('Необходимо оценить все 3 основных критерия (от 1 до 10 баллов)!', 'error');
+        return;
+      }
+
+      const total = calculateFormTotal();
+      const comment = document.getElementById('evalComment').value.trim();
+
+      // Удаляем старую оценку этого эксперта за этот проект, если была
+      evaluations = evaluations.filter(ev => !(ev.projectId === currentProjectId && ev.expertId === currentExpertId));
+
+      const newEval = {
+        id: 'ev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        projectId: currentProjectId,
+        expertId: currentExpertId,
+        stream: currentStream,
+        c1: formScore.c1,
+        c2: formScore.c2,
+        c3: formScore.c3,
+        b1: formScore.b1,
+        b2: formScore.b2,
+        b3: formScore.b3,
+        total: total,
+        comment: comment,
+        timestamp: new Date().toISOString()
+      };
+
+      evaluations.push(newEval);
+      persistEvaluations();
+
+      const proj = projectsList.find(p => p.id === currentProjectId);
+      showToast(`Оценка за проект «${proj ? proj.name : ''}» сохранена (${total} б.)!`, 'success');
+
+      renderProjectsChips();
+      loadExistingEvaluationForCurrent();
+
+      // Автопереход к следующему неоцененному проекту потока
+      const streamProjects = projectsList.filter(p => p.stream === currentStream);
+      const nextUnrated = streamProjects.find(p => !evaluations.some(ev => ev.projectId === p.id && ev.expertId === currentExpertId));
+      if (nextUnrated) {
+        setTimeout(() => {
+          selectProject(nextUnrated.id);
+        }, 600);
+      }
+    }
+
+    // ==========================================
+    // ДАШБОРД ОРГАНИЗАТОРА (МАТРИЦА + РЕЙТИНГ)
+    // ==========================================
+    function setDashboardStream(streamVal) {
+      dashFilterStream = streamVal;
+      document.querySelectorAll('.dash-filter-btn').forEach(btn => {
+        const s = btn.dataset.stream;
+        if (s == streamVal) {
+          btn.className = "dash-filter-btn px-3 py-1.5 text-xs font-bold rounded-lg bg-white text-slate-900 shadow-xs";
+        } else {
+          btn.className = "dash-filter-btn px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900";
+        }
+      });
+      updateDashboard();
+    }
+
+    function updateDashboard() {
+      let filteredProjects = projectsList;
+      let filteredExperts = expertsList;
+      let filteredEvals = evaluations;
+
+      if (dashFilterStream !== 'all') {
+        const streamNum = parseInt(dashFilterStream, 10);
+        filteredProjects = projectsList.filter(p => p.stream === streamNum);
+        filteredExperts = expertsList.filter(e => e.stream === streamNum);
+        filteredEvals = evaluations.filter(ev => ev.stream === streamNum);
+      }
+
+      // 1. Статистика
+      document.getElementById('statTotalEvals').textContent = filteredEvals.length;
+      
+      const ratedProjectsCount = filteredProjects.filter(p => filteredEvals.some(ev => ev.projectId === p.id)).length;
+      document.getElementById('statProjectsDone').textContent = `${ratedProjectsCount} / ${filteredProjects.length}`;
+
+      const activeExpertsSet = new Set(filteredEvals.map(ev => ev.expertId));
+      document.getElementById('statActiveExperts').textContent = `${activeExpertsSet.size} / ${filteredExperts.length}`;
+
+      const avgScore = filteredEvals.length > 0 
+        ? (filteredEvals.reduce((acc, ev) => acc + ev.total, 0) / filteredEvals.length).toFixed(1)
+        : '0.0';
+      document.getElementById('statAvgScore').textContent = avgScore;
+
+      // 2. Рендер Матрицы явок
+      renderAttendanceMatrix(filteredProjects, filteredExperts);
+
+      // 3. Рендер Рейтинговой таблицы
+      renderRankingsTable(filteredProjects);
+
+      lucide.createIcons();
+    }
+
+    function renderAttendanceMatrix(projects, experts) {
+      const table = document.getElementById('matrixTable');
+      if (experts.length === 0 || projects.length === 0) {
+        table.innerHTML = `<tr><td class="p-4 text-center text-slate-400">Нет данных для отображения матрицы</td></tr>`;
+        return;
+      }
+
+      let html = '<thead><tr class="bg-slate-50 border-b border-slate-200">';
+      html += `<th class="p-3 sticky left-0 bg-slate-50 z-10 font-bold text-slate-700 min-w-[200px] border-r border-slate-200">Команда \\ Эксперты</th>`;
+      
+      experts.forEach(exp => {
+        const shortName = exp.name.split(' ')[0] + ' ' + (exp.name.split(' ')[1] ? exp.name.split(' ')[1][0] + '.' : '');
+        html += `<th class="p-2 text-center text-[11px] font-semibold text-slate-600 min-w-[75px]" title="${exp.name}">
+          ${shortName}
+        </th>`;
+      });
+      html += '<th class="p-2 text-center font-bold text-slate-700 bg-slate-100">Сдано</th></tr></thead>';
+
+      html += '<tbody class="divide-y divide-slate-100">';
+      projects.forEach((proj, pIdx) => {
+        html += `<tr class="hover:bg-slate-50/80 transition">`;
+        html += `<td class="p-3 sticky left-0 bg-white font-medium text-slate-800 z-10 border-r border-slate-200 flex items-center gap-2">
+          <span class="w-5 h-5 rounded bg-slate-100 text-slate-600 text-[10px] font-bold flex items-center justify-center shrink-0">${pIdx+1}</span>
+          <span class="truncate max-w-[180px]">${proj.name}</span>
+        </td>`;
+
+        let givenVotes = 0;
+        experts.forEach(exp => {
+          const evalItem = evaluations.find(ev => ev.projectId === proj.id && ev.expertId === exp.id);
+          if (evalItem) {
+            givenVotes++;
+            html += `<td class="p-2 text-center">
+              <span class="inline-block px-1.5 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300" title="Балл: ${evalItem.total}">
+                ${evalItem.total}
+              </span>
+            </td>`;
+          } else {
+            html += `<td class="p-2 text-center text-slate-300 font-bold">—</td>`;
+          }
+        });
+
+        const isFull = givenVotes === experts.length && experts.length > 0;
+        html += `<td class="p-2 text-center font-bold bg-slate-50/60">
+          <span class="px-2 py-0.5 rounded-full text-[11px] ${isFull ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'}">
+            ${givenVotes}/${experts.length}
+          </span>
+        </td>`;
+        html += `</tr>`;
+      });
+      html += '</tbody>';
+      table.innerHTML = html;
+    }
+
+    function renderRankingsTable(projects) {
+      const tbody = document.getElementById('rankingTableBody');
+      document.getElementById('rankingCounter').textContent = `Проектов: ${projects.length}`;
+
+      // Агрегируем оценки по каждому проекту
+      const rankedData = projects.map(proj => {
+        const projEvals = evaluations.filter(ev => ev.projectId === proj.id);
+        const count = projEvals.length;
+
+        if (count === 0) {
+          return {
+            project: proj,
+            count: 0,
+            avgTotal: 0,
+            avgC1: 0,
+            avgC2: 0,
+            avgC3: 0,
+            avgBonus: 0
+          };
+        }
+
+        const sumTotal = projEvals.reduce((acc, ev) => acc + ev.total, 0);
+        const sumC1 = projEvals.reduce((acc, ev) => acc + ev.c1, 0);
+        const sumC2 = projEvals.reduce((acc, ev) => acc + ev.c2, 0);
+        const sumC3 = projEvals.reduce((acc, ev) => acc + ev.c3, 0);
+        const sumBonus = projEvals.reduce((acc, ev) => acc + (ev.b1 + ev.b2 + ev.b3), 0);
+
+        return {
+          project: proj,
+          count: count,
+          avgTotal: (sumTotal / count),
+          avgC1: (sumC1 / count),
+          avgC2: (sumC2 / count),
+          avgC3: (sumC3 / count),
+          avgBonus: (sumBonus / count)
+        };
+      });
+
+      // Сортировка: сначала с наивысшим средним баллом, затем по числу голосов
+      rankedData.sort((a, b) => b.avgTotal - a.avgTotal || b.count - a.count);
+
+      tbody.innerHTML = '';
+      rankedData.forEach((item, index) => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition";
+
+        let rankBadgeClass = "bg-slate-100 text-slate-700";
+        if (index === 0 && item.count > 0) rankBadgeClass = "bg-amber-100 text-amber-900 border border-amber-300 font-extrabold";
+        else if (index === 1 && item.count > 0) rankBadgeClass = "bg-slate-200 text-slate-800 font-bold";
+        else if (index === 2 && item.count > 0) rankBadgeClass = "bg-amber-50 text-amber-800 font-bold";
+
+        tr.innerHTML = `
+          <td class="py-3 px-4 text-center">
+            <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-heading ${rankBadgeClass}">
+              ${index + 1}
+            </span>
+          </td>
+          <td class="py-3 px-4 font-semibold text-slate-900">
+            ${item.project.name}
+          </td>
+          <td class="py-3 px-3 text-center">
+            <span class="px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700">П${item.project.stream}</span>
+          </td>
+          <td class="py-3 px-3 text-center">
+            <span class="px-2 py-0.5 rounded-full text-xs font-semibold ${item.count > 0 ? 'bg-indigo-50 text-indigo-700' : 'text-slate-400'}">
+              ${item.count}
+            </span>
+          </td>
+          <td class="py-3 px-3 text-right font-medium text-slate-600">${item.count ? item.avgC1.toFixed(1) : '—'}</td>
+          <td class="py-3 px-3 text-right font-medium text-slate-600">${item.count ? item.avgC2.toFixed(1) : '—'}</td>
+          <td class="py-3 px-3 text-right font-medium text-slate-600">${item.count ? item.avgC3.toFixed(1) : '—'}</td>
+          <td class="py-3 px-3 text-right font-medium text-slate-600">${item.count ? '+' + item.avgBonus.toFixed(1) : '—'}</td>
+          <td class="py-3 px-4 text-right bg-slate-50/70">
+            <span class="text-base font-extrabold font-heading ${item.count > 0 ? 'text-brand-800' : 'text-slate-400'}">
+              ${item.count ? item.avgTotal.toFixed(2) : '0.00'}
+            </span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // ==========================================
+    // ЭКСПОРТ В EXCEL / CSV БЕЗ ИНТЕРНЕТА
+    // ==========================================
+    function exportScoresToCSV() {
+      if (evaluations.length === 0) {
+        showToast('Пока нет ни одной оценки для экспорта!', 'error');
+        return;
+      }
+
+      // Заголовки CSV
+      let csvContent = "\uFEFF"; // BOM для корректного отображения кириллицы в Excel
+      csvContent += "ID;Поток;Проект;Эксперт;Технологичность (1-10);Коммерциализация (1-10);Команда (1-10);Бонус НПТЛ;Бонус Акселератор;Бонус Ученый;Итоговый балл (макс 33);Комментарий;Дата и время\r\n";
+
+      evaluations.forEach(ev => {
+        const proj = projectsList.find(p => p.id === ev.projectId);
+        const exp = expertsList.find(e => e.id === ev.expertId);
+
+        const row = [
+          ev.id,
+          ev.stream,
+          `"${(proj ? proj.name : '').replace(/"/g, '""')}"`,
+          `"${(exp ? exp.name : '').replace(/"/g, '""')}"`,
+          ev.c1,
+          ev.c2,
+          ev.c3,
+          ev.b1,
+          ev.b2,
+          ev.b3,
+          ev.total,
+          `"${(ev.comment || '').replace(/"/g, '""')}"`,
+          ev.timestamp
+        ];
+        csvContent += row.join(";") + "\r\n";
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const filename = `Navigator_Demoday_Scores_${new Date().toISOString().slice(0,10)}.csv`;
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('Файл с оценками успешно выгружен!', 'success');
+    }
+
+    // ==========================================
+    // НАСТРОЙКИ: РЕДАКТИРОВАНИЕ СПИСКОВ В 1 КЛИК
+    // ==========================================
+    function populateSettingsTextareas() {
+      // Эксперты
+      const expLines = expertsList.map(e => `${e.stream} | ${e.name}`).join('\n');
+      document.getElementById('rawExpertsInput').value = expLines;
+
+      // Команды
+      const projLines = projectsList.map(p => `${p.stream} | ${p.name}`).join('\n');
+      document.getElementById('rawProjectsInput').value = projLines;
+    }
+
+    function saveExpertsConfig() {
+      const raw = document.getElementById('rawExpertsInput').value.trim();
+      if (!raw) return;
+
+      const lines = raw.split('\n');
+      const newExperts = [];
+      lines.forEach((line, idx) => {
+        const parts = line.split('|');
+        if (parts.length >= 2) {
+          const stream = parseInt(parts[0].trim(), 10) || 1;
+          const name = parts.slice(1).join('|').trim();
+          if (name) {
+            newExperts.push({
+              id: 'exp_' + (idx + 1),
+              stream: stream,
+              name: name
+            });
+          }
+        }
+      });
+
+      if (newExperts.length === 0) {
+        showToast('Ошибка формата. Используйте формат: Поток | ФИО', 'error');
+        return;
+      }
+
+      expertsList = newExperts;
+      localStorage.setItem(STORAGE_KEY_EXPERTS, JSON.stringify(expertsList));
+      populateExpertSelect();
+      showToast(`Сохранено ${expertsList.length} экспертов!`, 'success');
+    }
+
+    function saveProjectsConfig() {
+      const raw = document.getElementById('rawProjectsInput').value.trim();
+      if (!raw) return;
+
+      const lines = raw.split('\n');
+      const newProjects = [];
+      lines.forEach((line, idx) => {
+        const parts = line.split('|');
+        if (parts.length >= 2) {
+          const stream = parseInt(parts[0].trim(), 10) || 1;
+          const name = parts.slice(1).join('|').trim();
+          if (name) {
+            newProjects.push({
+              id: 'proj_' + (idx + 1),
+              stream: stream,
+              name: name
+            });
+          }
+        }
+      });
+
+      if (newProjects.length === 0) {
+        showToast('Ошибка формата. Используйте: Поток | Название команды', 'error');
+        return;
+      }
+
+      projectsList = newProjects;
+      localStorage.setItem(STORAGE_KEY_PROJECTS, JSON.stringify(projectsList));
+      renderProjectsChips();
+      showToast(`Сохранено ${projectsList.length} команд!`, 'success');
+    }
+
+    function exportJSONBackup() {
+      const backupData = {
+        exportedAt: new Date().toISOString(),
+        experts: expertsList,
+        projects: projectsList,
+        evaluations: evaluations
+      };
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Backup_Demoday_${Date.now()}.json`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('Полная резервная копия сохранена!', 'success');
+    }
+
+    function clearAllEvaluations() {
+      // Использован внутренний кастомный диалог вместо alert/confirm
+      const confirmed = window.prompt('Для подтверждения очистки ВСЕХ выставленных оценок введите слово: СБРОС');
+      if (confirmed === 'СБРОС') {
+        evaluations = [];
+        persistEvaluations();
+        renderProjectsChips();
+        loadExistingEvaluationForCurrent();
+        updateDashboard();
+        showToast('Все оценки успешно сброшены.', 'info');
+      } else if (confirmed !== null) {
+        showToast('Сброс отменен: ключевое слово введено неверно.', 'error');
+      }
+    }
+
+    // ==========================================
+    // СИСТЕМА УВЕДОМЛЕНИЙ (TOASTS)
+    // ==========================================
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      let bg = 'bg-slate-900 text-white';
+      let icon = 'info';
+
+      if (type === 'success') {
+        bg = 'bg-brand-800 text-white shadow-brand-900/40';
+        icon = 'check-circle-2';
+      } else if (type === 'error') {
+        bg = 'bg-rose-700 text-white';
+        icon = 'alert-triangle';
+      }
+
+      toast.className = `pointer-events-auto flex items-center gap-3 p-3.5 rounded-xl shadow-xl text-xs sm:text-sm font-semibold transition-all transform duration-300 translate-y-4 opacity-0 ${bg}`;
+      toast.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5 shrink-0"></i> <span>${message}</span>`;
+
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-4', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+  </script>
+</body>
+</html>
